@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ResortBooking.API/ResortBooking.API.csproj" />
+  <Project Path="ResortBooking.Application/ResortBooking.Application.csproj" />
+  <Project Path="ResortBooking.Domain/ResortBooking.Domain.csproj" />
+  <Project Path="ResortBooking.Infrastructure/ResortBooking.Infrastructure.csproj" />
+</Solution>
