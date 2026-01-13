@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ResortBooking.Domain.Enums
+namespace ResortBooking.Domain.Enums;
+
+public enum UserRole
 {
-    public enum UserRole
-    {
-        User = 0,
-        Admin = 1
-    }
+    User = 0,
+    Admin = 1
 }

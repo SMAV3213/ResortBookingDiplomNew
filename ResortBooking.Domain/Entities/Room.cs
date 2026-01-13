@@ -3,15 +3,19 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ResortBooking.Domain.Entities;
+namespace ResortBooking.Domain.Entites;
 
-public class Room : BaseEntity
+public class Room
 {
-    public string Name { get; set; } = null!;
-    public RoomStatus Status { get; set; } = RoomStatus.Available;
+    public Guid Id { get; set; }
+
+    public string Number { get; set; } = null!;
+
+    public RoomStatus Status { get; set; }
 
     public Guid RoomTypeId { get; set; }
     public RoomType RoomType { get; set; } = null!;
+    public DateTime CreatedAt { get; set; }
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

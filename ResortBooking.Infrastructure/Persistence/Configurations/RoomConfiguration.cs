@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ResortBooking.Domain.Entities;
+using ResortBooking.Domain.Entites;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,8 +17,14 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
             .IsRequired()
             .HasMaxLength(10);
 
+        builder.Property(x => x.Status)
+            .IsRequired();
+
         builder.HasOne(x => x.RoomType)
             .WithMany(x => x.Rooms)
             .HasForeignKey(x => x.RoomTypeId);
+
+        builder.Property(x => x.CreatedAt)
+            .HasDefaultValueSql("GETUTCDATE()");
     }
 }

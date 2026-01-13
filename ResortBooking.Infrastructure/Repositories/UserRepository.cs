@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ResortBooking.Application.Interfaces;
-using ResortBooking.Domain.Entities;
+using ResortBooking.Application.Interfaces.Repositories;
+using ResortBooking.Domain.Entites;
 using ResortBooking.Infrastructure.Persistence;
 using System;
 using System.Collections.Generic;
@@ -10,31 +10,46 @@ namespace ResortBooking.Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly ResortBookingDbContext _db;
+    private readonly ApplicationDbContext _context;
 
-    public UserRepository(ResortBookingDbContext db)
+    public UserRepository(ApplicationDbContext context)
     {
-        _db = db;
+        _context = context;
     }
 
-    public async Task<User?> GetByLoginAsync(string login)
+    public Task<User?> GetByLoginAsync(string login)
     {
-        return await _db.Users.FirstOrDefaultAsync(u => u.Login == login);
+        return _context.Users.FirstOrDefaultAsync(u => u.Login == login);
     }
-
-    public async Task<User?> GetByIdAsync(Guid id)
+    public Task<User?> GetByEmailAsync(string email)
     {
-        return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        return _context.Users.FirstOrDefaultAsync(u => u.Email == email);
     }
-
+    public Task<User?> GetByPhoneAsync(string phoneNumber)
+    {
+        return _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+    }
+    public Task<User?> GetByIdAsync(Guid id)
+    {
+        return _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+    }
     public async Task AddAsync(User user)
     {
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync();
+        await _context.Users.AddAsync(user);
     }
-
-    public async Task SaveChangesAsync()
+    public async Task RemoveAsync(Guid id) {
+        var user = await _context.Users.FindAsync(id);
+        if (user != null) {
+            _context.Users.Remove(user);
+        }
+    }
+    public Task UpdateAsync(User user)
     {
-        await _db.SaveChangesAsync();
+        _context.Users.Update(user);
+        return Task.CompletedTask;
+    }
+    public Task SaveChangesAsync()
+    {
+        return _context.SaveChangesAsync();
     }
 }

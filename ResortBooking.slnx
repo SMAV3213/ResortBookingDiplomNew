@@ -1,6 +1,6 @@
 <Solution>
-  <Project Path="ResortBooking.API/ResortBooking.API.csproj" />
-  <Project Path="ResortBooking.Application/ResortBooking.Application.csproj" />
-  <Project Path="ResortBooking.Domain/ResortBooking.Domain.csproj" />
-  <Project Path="ResortBooking.Infrastructure/ResortBooking.Infrastructure.csproj" />
+  <Project Path="ResortBooking.API/ResortBooking.API.csproj" Id="3d9d8819-67ea-4f17-ae76-9b4e36fbcd87" />
+  <Project Path="ResortBooking.Applicatiion/ResortBooking.Application.csproj" Id="cb4b3182-61db-4e9f-a721-8ba2d9ec19ab" />
+  <Project Path="ResortBooking.Domain/ResortBooking.Domain.csproj" Id="9c06a1f3-6d55-43e4-87db-b83af2dacfc6" />
+  <Project Path="ResortBooking.Infrastructure/ResortBooking.Infrastructure.csproj" Id="eddf654a-b1e8-47a2-bd4a-666cfa8557d8" />
 </Solution>

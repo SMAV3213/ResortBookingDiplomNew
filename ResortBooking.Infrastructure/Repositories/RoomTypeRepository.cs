@@ -1,48 +1,78 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ResortBooking.Application.Interfaces;
-using ResortBooking.Domain.Entities;
+using ResortBooking.Application.Interfaces.Repositories;
+using ResortBooking.Domain.Entites;
+using ResortBooking.Domain.Enums;
 using ResortBooking.Infrastructure.Persistence;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static ResortBooking.Application.DTOs.RoomTypeDTOs;
 
 namespace ResortBooking.Infrastructure.Repositories;
 
 public class RoomTypeRepository : IRoomTypeRepository
 {
-    private readonly ResortBookingDbContext _db;
+    private readonly ApplicationDbContext _context;
 
-    public RoomTypeRepository(ResortBookingDbContext db)
+    public RoomTypeRepository(ApplicationDbContext context)
     {
-        _db = db;
+        _context = context;
     }
 
-    public async Task<List<RoomType>> GetAllAsync()
+    public Task<List<RoomType>> GetAllAsync()
+        => _context.RoomTypes
+            .Include(x => x.Rooms)
+            .Include(x => x.Images)
+            .ToListAsync();
+
+    public Task<RoomType?> GetByIdAsync(Guid id)
+        => _context.RoomTypes
+            .Include(x => x.Rooms)
+            .Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+    public async Task AddAsync(RoomTypeWithoutRoomsDTO roomType)
     {
-        return await _db.RoomTypes.Include(rt => rt.Images).ToListAsync();
+        var entity = new RoomType
+        {
+            Id = roomType.Id,
+            Name = roomType.Name,
+            Description = roomType.Description,
+            Capacity = roomType.Capacity,
+            PricePerNight = roomType.PricePerNight,
+            Images = roomType.ImageUrls?.Select(url => new RoomTypeImage { FilePath = url }).ToList()
+        };
+        await _context.RoomTypes.AddAsync(entity);
     }
 
-    public async Task<RoomType?> GetByIdAsync(Guid id)
-    {
-        return await _db.RoomTypes.Include(rt => rt.Images)
-                                  .FirstOrDefaultAsync(rt => rt.Id == id);
-    }
+    public void Update(RoomType roomType)
+        => _context.RoomTypes.Update(roomType);
 
-    public async Task AddAsync(RoomType roomType)
-    {
-        _db.RoomTypes.Add(roomType);
-        await _db.SaveChangesAsync();
-    }
+    public void Remove(RoomType roomType)
+        => _context.RoomTypes.Remove(roomType);
 
-    public async Task UpdateAsync(RoomType roomType)
-    {
-        _db.RoomTypes.Update(roomType);
-        await _db.SaveChangesAsync();
-    }
+    public Task SaveChangesAsync()
+        => _context.SaveChangesAsync();
 
-    public async Task DeleteAsync(RoomType roomType)
+    public async Task<List<RoomType>> GetAvailableRoomTypesAsync(int guests ,DateTime checkIn, DateTime checkOut)
     {
-        _db.RoomTypes.Remove(roomType);
-        await _db.SaveChangesAsync();
+        var roomTypes = await _context.RoomTypes
+            .Include(rt => rt.Images)
+            .Include(rt => rt.Rooms)
+            .ThenInclude(r => r.Bookings)
+            .ToListAsync();
+
+        var availableTypes = roomTypes
+            .Where(rt =>
+                rt.Capacity >= guests &&
+                rt.Rooms.Any(r =>
+                    r.Bookings.All(b =>
+                        checkOut <= b.CheckInDate || checkIn >= b.CheckOutDate
+                    )
+                )
+            )
+            .ToList();
+
+        return availableTypes;
     }
 }
