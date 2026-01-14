@@ -9,7 +9,7 @@ namespace ResortBooking.Application.Interfaces.Repositories;
 public interface IRoomTypeRepository
 {
     Task<List<RoomType>> GetAllAsync();
-    Task<List<RoomType>> GetAvailableRoomTypesAsync(int guests, DateTime checkIn, DateTime checkOut);
+    Task<List<RoomTypeWithoutRoomsDTO>> GetAvailableRoomTypesAsync(int guests, DateTime checkIn, DateTime checkOut);
     Task<RoomType?> GetByIdAsync(Guid id);
 
     Task AddAsync(RoomTypeWithoutRoomsDTO roomType);

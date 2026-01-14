@@ -40,7 +40,9 @@ public class RoomTypeRepository : IRoomTypeRepository
             Description = roomType.Description,
             Capacity = roomType.Capacity,
             PricePerNight = roomType.PricePerNight,
-            Images = roomType.ImageUrls?.Select(url => new RoomTypeImage { FilePath = url }).ToList()
+            Images = roomType.ImageUrls != null
+                ? roomType.ImageUrls.Select(url => new RoomTypeImage { FilePath = url }).ToList()
+                : new List<RoomTypeImage>()
         };
         await _context.RoomTypes.AddAsync(entity);
     }
@@ -54,7 +56,7 @@ public class RoomTypeRepository : IRoomTypeRepository
     public Task SaveChangesAsync()
         => _context.SaveChangesAsync();
 
-    public async Task<List<RoomType>> GetAvailableRoomTypesAsync(int guests ,DateTime checkIn, DateTime checkOut)
+    public async Task<List<RoomTypeWithoutRoomsDTO>> GetAvailableRoomTypesAsync(int guests, DateTime checkIn, DateTime checkOut)
     {
         var roomTypes = await _context.RoomTypes
             .Include(rt => rt.Images)
@@ -71,6 +73,14 @@ public class RoomTypeRepository : IRoomTypeRepository
                     )
                 )
             )
+            .Select(rt => new RoomTypeWithoutRoomsDTO(
+                rt.Id,
+                rt.Name,
+                rt.Description,
+                rt.Capacity,
+                rt.PricePerNight,
+                rt.Images?.Select(img => img.FilePath).ToList() ?? new List<string>()
+            ))
             .ToList();
 
         return availableTypes;

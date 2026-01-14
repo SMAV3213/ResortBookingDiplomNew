@@ -13,7 +13,7 @@ namespace ResortBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20260113140239_mb-ready")]
-    partial class mbready
+    partial class MbReady
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

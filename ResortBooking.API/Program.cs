@@ -8,6 +8,8 @@ using ResortBooking.Infrastructure.Persistence;
 using ResortBooking.Infrastructure.Repositories;
 using ResortBooking.Infrastructure.Services;
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -15,9 +17,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "ResortBookingAPI", Version = "v1" });
-    
-
-});
+    });
 // Add services to the container.
 builder.Services.AddAuthentication(options =>
 {
@@ -62,6 +62,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 

@@ -133,7 +133,10 @@ public class RoomTypeService : IRoomTypeService
 
     private async Task SaveImagesAsync(RoomType roomType, List<IFormFile> images)
     {
-        var folder = Path.Combine(_env.WebRootPath, "uploads", "room-types");
+        var webRoot = _env.WebRootPath 
+                      ?? Path.Combine(_env.ContentRootPath ?? string.Empty, "wwwroot");
+
+        var folder = Path.Combine(webRoot, "uploads", "room-types");
         Directory.CreateDirectory(folder);
 
         foreach (var image in images)
@@ -141,7 +144,7 @@ public class RoomTypeService : IRoomTypeService
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
             var path = Path.Combine(folder, fileName);
 
-            using var stream = new FileStream(path, FileMode.Create);
+            await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
             await image.CopyToAsync(stream);
 
             roomType.Images.Add(new RoomTypeImage
@@ -162,35 +165,10 @@ public class RoomTypeService : IRoomTypeService
         }
     }
 
-    public async Task<ApiResponse<List<RoomTypeDTO>>> GetAvailableAsync(int guests, DateTime checkIn, DateTime checkOut)
+    public async Task<ApiResponse<List<RoomTypeWithoutRoomsDTO>>> GetAvailableRoomTypesAsync(int guests, DateTime checkIn, DateTime checkOut)
     {
-        if (checkIn >= checkOut)
-            return ApiResponse<List<RoomTypeDTO>>.Fail("Дата заезда должна быть раньше даты выезда");
-
-        if (guests <= 0)
-            return ApiResponse<List<RoomTypeDTO>>.Fail("Количество гостей должно быть больше нуля");
-
         var types = await _repository.GetAvailableRoomTypesAsync(guests, checkIn, checkOut);
-
-        var result = types.Select(x => new RoomTypeDTO(
-            x.Id,
-            x.Name,
-            x.Description,
-            x.Capacity,
-            x.PricePerNight,
-            x.Images.Select(i => i.FilePath).ToList(),
-            x.Rooms.Select(r => new RoomsInRoomTypeDTO(
-                r.Id,
-                r.Number,
-                r.Status.ToString()
-            )).ToList()
-        )).ToList();
-
-        return ApiResponse<List<RoomTypeDTO>>.Ok(result, "Свободные типы комнат получены");
+        return ApiResponse<List<RoomTypeWithoutRoomsDTO>>.Ok(types, "Свободные типы комнат получены");
     }
 
-    public async Task<List<RoomType>> GetAvailableRoomTypesAsync(int guests, DateTime checkIn, DateTime checkOut)
-    {
-        return await _repository.GetAvailableRoomTypesAsync(guests, checkIn, checkOut);
-    }
 }

@@ -5,16 +5,20 @@ using static ResortBooking.Application.DTOs.AuthDTOs;
 
 namespace ResortBooking.API.Controllers;
 
+/// <summary>
+/// Контроллер для управления аутентификацией пользователей (регистрация, вход, обновление токена, выход).
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
 
-    public AuthController(IAuthService authService)
-    {
-        _authService = authService;
-    }
+    /// <summary>
+    /// Инициализирует новый экземпляр класса <see cref="AuthController"/>.
+    /// </summary>
+    /// <param name="authService">Сервис аутентификации.</param>
+    public AuthController(IAuthService authService) => _authService = authService;
 
     /// <summary>
     /// Регистрация нового пользователя
@@ -23,7 +27,9 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterUserDTO dto)
     {
         var response = await _authService.RegisterAsync(dto);
-        return response.Success ? Ok(response) : BadRequest(response);
+        return response.Success
+            ? Ok(response.Data != null ? response.Data : response.Message)
+            : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -33,7 +39,9 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginDTO dto)
     {
         var response = await _authService.LoginAsync(dto);
-        return response.Success ? Ok(response) : BadRequest(response);
+        return response.Success
+            ? Ok(response.Data != null ? response.Data : response.Message)
+            : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -43,7 +51,9 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenDTO dto)
     {
         var response = await _authService.RefreshTokenAsync(dto.RefreshToken);
-        return response.Success ? Ok(response) : BadRequest(response);
+        return response.Success
+            ? Ok(response.Data != null ? response.Data : response.Message)
+            : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -54,6 +64,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout([FromBody] LogoutDTO dto)
     {
         var response = await _authService.LogoutAsync(dto.RefreshToken);
-        return response.Success ? Ok(response) : BadRequest(response);
+        return response.Success
+            ? Ok(response.Message)
+            : BadRequest(response.Message);
     }
 }

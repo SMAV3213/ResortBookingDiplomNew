@@ -5,12 +5,18 @@ using static ResortBooking.Application.DTOs.RoomDTOs;
 
 namespace ResortBooking.API.Controllers;
 
+/// <summary>
+/// Контроллер управления комнатами
+/// </summary>
 [ApiController]
 [Route("api/rooms")]
 public class RoomController : ControllerBase
 {
     private readonly IRoomService _roomService;
-
+    /// <summary>
+    /// Инициализирует новый экземпляр класса <see cref="RoomController"/>.
+    /// </summary>
+    /// <param name="roomService">Сервис бронирования.</param>
     public RoomController(IRoomService roomService)
     {
         _roomService = roomService;
@@ -25,7 +31,9 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var response = await _roomService.GetAllAsync();
-        return Ok(response);
+        return response.Success
+            ? Ok(response.Data)
+            : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -37,7 +45,9 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
     {
         var response = await _roomService.GetByIdAsync(id);
-        return response.Success ? Ok(response) : NotFound(response);
+        return response.Success
+            ? Ok(response.Data)
+            : NotFound(response.Message);
     }
 
     /// <summary>
@@ -49,7 +59,10 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateRoomDTO dto)
     {
         var response = await _roomService.AddAsync(dto);
-        return response.Success ? Ok(response) : BadRequest(response);
+        if (!response.Success)
+            return BadRequest(response.Message);
+
+        return CreatedAtAction(nameof(GetById), new { id = response.Data }, response.Message);
     }
 
     /// <summary>
@@ -61,7 +74,9 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoomDTO dto)
     {
         var response = await _roomService.UpdateAsync(id, dto);
-        return response.Success ? Ok(response) : BadRequest(response);
+        return response.Success
+            ? Ok(response.Message)
+            : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -73,6 +88,8 @@ public class RoomController : ControllerBase
     public async Task<IActionResult> Delete(Guid id)
     {
         var response = await _roomService.DeleteAsync(id);
-        return response.Success ? Ok(response) : NotFound(response);
+        return response.Success
+            ? Ok(response.Message)
+            : NotFound(response.Message);
     }
 }

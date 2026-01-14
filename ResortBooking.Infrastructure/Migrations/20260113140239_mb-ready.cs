@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ResortBooking.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class mbready : Migration
+    public partial class MbReady : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

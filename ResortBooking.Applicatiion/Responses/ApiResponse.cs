@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ResortBooking.Domain.Entites;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -15,4 +16,9 @@ public class ApiResponse<T>
 
     public static ApiResponse<T> Fail(string message)
         => new() { Success = false, Message = message };
+
+    public static void Ok(RoomType roomType, string v)
+    {
+        throw new NotImplementedException();
+    }
 }
