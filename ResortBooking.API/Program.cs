@@ -1,23 +1,45 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using ResortBooking.API.Filters;
 using ResortBooking.Application.Interfaces.Repositories;
 using ResortBooking.Application.Interfaces.Services;
 using ResortBooking.Infrastructure.Persistence;
 using ResortBooking.Infrastructure.Repositories;
 using ResortBooking.Infrastructure.Services;
+using System.Reflection;
 using System.Text;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "ResortBookingAPI", Version = "v1" });
+    var currentAssembly = Assembly.GetExecutingAssembly();
+
+    var xmlDocs = currentAssembly.GetReferencedAssemblies()
+        .Union([currentAssembly.GetName()])
+        .Select(a => Path.Combine(AppContext.BaseDirectory, $"{a.Name}.xml"))
+        .Where(f => File.Exists(f)).ToList();
+
+    xmlDocs.ForEach(xmlDoc => options.IncludeXmlComments(xmlDoc));
+
+    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+    {
+        Description = "Введите JWT токен авторизации.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = JwtBearerDefaults.AuthenticationScheme
     });
+
+    //options.DocumentFilter<InfoFilter>();
+    options.OperationFilter<JwtAuthorizeFilter>();
+});
 // Add services to the container.
 builder.Services.AddAuthentication(options =>
 {
@@ -43,7 +65,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+//builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
