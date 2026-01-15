@@ -23,6 +23,6 @@ builder.Services
 
 var app = builder.Build();
 
-app.UseApiServices(app.Environment);
+
 
 app.Run();
