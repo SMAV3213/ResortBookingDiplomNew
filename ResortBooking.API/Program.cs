@@ -1,18 +1,4 @@
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using ResortBooking.API;
-using ResortBooking.API.Filters;
-using ResortBooking.Application.Interfaces.Repositories;
-using ResortBooking.Application.Interfaces.Services;
-using ResortBooking.Infrastructure.Persistence;
-using ResortBooking.Infrastructure.Repositories;
-using ResortBooking.Infrastructure.Services;
-using System.Reflection;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +9,21 @@ builder.Services
 
 var app = builder.Build();
 
+app.UseApiServices(app.Environment);
 
+app.UseStatusCodePages(async context =>
+{
+    var response = context.HttpContext.Response;
+    response.ContentType = "text/plain; charset=utf-8";
+
+    if (response.StatusCode == StatusCodes.Status415UnsupportedMediaType)
+    {
+        await response.WriteAsync("Неподдерживаемый тип содержимого. Ожидается 'application/json'.");
+    }
+    else if (response.StatusCode == StatusCodes.Status401Unauthorized)
+    {
+        await response.WriteAsync("Доступ запрещён. Требуется аутентификация.");
+    }
+});
 
 app.Run();
