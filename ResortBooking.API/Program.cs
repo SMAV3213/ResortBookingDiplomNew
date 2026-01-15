@@ -60,6 +60,19 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            var response = context.Response;
+            response.StatusCode = StatusCodes.Status401Unauthorized;
+            response.ContentType = "text/plain; charset=utf-8";
+
+            var message = "Не авторизован";
+            await response.WriteAsync(message);
+        }
+    };
 });
 builder.Services.AddAuthorization();
 
@@ -96,6 +109,21 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseStatusCodePages(async context =>
+{
+    var response = context.HttpContext.Response;
+    response.ContentType = "text/plain; charset=utf-8";
+
+    if (response.StatusCode == StatusCodes.Status415UnsupportedMediaType)
+    {
+        await response.WriteAsync("Неподдерживаемый тип содержимого. Ожидается 'application/json'.");
+    }
+    else if (response.StatusCode == StatusCodes.Status401Unauthorized)
+    {
+        await response.WriteAsync("Доступ запрещён. Требуется аутентификация.");
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
