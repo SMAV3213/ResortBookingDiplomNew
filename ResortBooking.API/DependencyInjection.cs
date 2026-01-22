@@ -1,12 +1,14 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using ResortBooking.API.Filters;
+using ResortBooking.Application.Data.Options;
 using ResortBooking.Application.Interfaces.Repositories;
 using ResortBooking.Application.Interfaces.Services;
 using ResortBooking.Infrastructure.Persistence;
@@ -143,6 +145,36 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Добавление политик cors.
+    /// </summary>
+    public static IServiceCollection AddApiCors(
+        this IServiceCollection services
+    )
+    {
+        using var provider = services.BuildServiceProvider();
+        var app = provider.GetRequiredService<IAppOptions>();
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(
+                "cors-policy",
+                policy =>
+                {
+                    policy
+                        .WithOrigins([.. app.CorsOrigins])
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
+                        .WithExposedHeaders("Content-Disposition");
+                }
+            );
+        });
+
+        return services;
+    }
+
     public static WebApplication UseApiServices(this WebApplication app,
     IWebHostEnvironment webHostEnvironment)
     {
@@ -160,7 +192,7 @@ public static class DependencyInjection
 
     private static WebApplication UseAuth(this WebApplication app)
     {
-        //app.UseCors("cors-policy");
+        app.UseCors("cors-policy");
         app.UseAuthentication();
         app.UseAuthorization();
 

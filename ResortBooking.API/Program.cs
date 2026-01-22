@@ -1,11 +1,14 @@
 using ResortBooking.API;
+using ResortBooking.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddApiServices(builder.Configuration);
+    .AddApiServices(builder.Configuration)
+    .AddOptions(builder.Configuration, builder.Environment)
+    .AddApiCors()
+    .AddInfrastructureServices(builder.Configuration);
     //.AddApplicationServices()
-    //.AddInfrastructureServices(builder.Configuration, builder.Environment)
 
 var app = builder.Build();
 
