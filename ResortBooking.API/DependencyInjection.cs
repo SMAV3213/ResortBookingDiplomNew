@@ -95,6 +95,19 @@ public static class DependencyInjection
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
             };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnChallenge = async context =>
+                {
+                    context.HandleResponse();
+                    var response = context.Response;
+                    response.StatusCode = StatusCodes.Status401Unauthorized;
+                    response.ContentType = "text/plain; charset=utf-8";
+                    var message = "Не авторизован";
+                    await response.WriteAsync(message);
+                }
+            };
         });
 
         return services;
