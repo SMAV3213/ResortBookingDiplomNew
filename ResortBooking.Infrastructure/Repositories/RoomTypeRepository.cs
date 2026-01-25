@@ -68,9 +68,11 @@ public class RoomTypeRepository : IRoomTypeRepository
             .Where(rt =>
                 rt.Capacity >= guests &&
                 rt.Rooms.Any(r =>
-                    r.Bookings.All(b =>
+                    r.Bookings
+                     .Where(b => b.Status != BookingStatus.Cancelled)
+                     .All(b =>
                         checkOut <= b.CheckInDate || checkIn >= b.CheckOutDate
-                    )
+                     )
                 )
             )
             .Select(rt => new RoomTypeWithoutRoomsDTO(

@@ -150,6 +150,11 @@ public class BookingService : IBookingService
         if (booking == null)
             return ApiResponse<bool>.Fail("Бронь не найдена");
 
+        var timeUntilCheckIn = booking.CheckInDate.ToUniversalTime() - DateTime.UtcNow;
+
+        if (timeUntilCheckIn.TotalDays < 3)
+            return ApiResponse<bool>.Fail("Нельзя отменить бронь, если до заезда осталось менее 3 дней");
+
         booking.Status = BookingStatus.Cancelled;
 
         _bookingRepository.Update(booking);

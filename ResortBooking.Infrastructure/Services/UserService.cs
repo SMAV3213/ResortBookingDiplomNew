@@ -42,6 +42,20 @@ public class UserService : IUserService
         if (user == null)
             return ApiResponse<bool>.Fail("Пользователь не найден");
 
+        if (!string.Equals(user.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var existingByEmail = await _repository.GetByEmailAsync(dto.Email);
+            if (existingByEmail != null && existingByEmail.Id != user.Id)
+                return ApiResponse<bool>.Fail("Пользователь с такой почтой уже существует");
+        }
+
+        if (!string.Equals(user.PhoneNumber, dto.PhoneNumber, StringComparison.OrdinalIgnoreCase))
+        {
+            var existingByPhone = await _repository.GetByPhoneAsync(dto.PhoneNumber);
+            if (existingByPhone != null && existingByPhone.Id != user.Id)
+                return ApiResponse<bool>.Fail("Пользователь с таким номером телефона уже существует");
+        }
+
         user.Email = dto.Email;
         user.PhoneNumber = dto.PhoneNumber;
 

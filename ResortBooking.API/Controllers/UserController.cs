@@ -10,7 +10,7 @@ namespace ResortBooking.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = "Admin")]
+
 public class UserController : ControllerBase
 {
     private readonly IUserService _service;
@@ -45,6 +45,7 @@ public class UserController : ControllerBase
     /// <param name="id">Идентификатор пользователя (GUID).</param>
     [HttpGet("{id:guid}")]
     [Authorize]
+
     public async Task<IActionResult> GetById(Guid id)
     {
         var response = await _service.GetByIdAsync(id);
