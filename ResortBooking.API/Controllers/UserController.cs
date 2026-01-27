@@ -30,9 +30,9 @@ public class UserController : ControllerBase
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] UsersQueryDTO query)
     {
-        var response = await _service.GetAllAsync();
+        var response = await _service.GetAllAsync(query);
         return response.Success
             ? Ok(response.Data)
             : BadRequest(response.Message);

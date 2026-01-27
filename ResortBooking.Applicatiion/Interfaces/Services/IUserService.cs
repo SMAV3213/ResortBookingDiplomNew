@@ -8,7 +8,7 @@ namespace ResortBooking.Application.Interfaces.Services;
 
 public interface IUserService
 {
-    Task<ApiResponse<List<UserDTO>>> GetAllAsync();
+    Task<ApiResponse<PagedResult<UserDTO>>> GetAllAsync(UsersQueryDTO query);
     Task<ApiResponse<UserDTO>> GetByIdAsync(Guid id);
 
     Task<ApiResponse<bool>> UpdateAsync(Guid id, UpdateUserDTO dto);

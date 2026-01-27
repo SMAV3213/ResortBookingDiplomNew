@@ -26,22 +26,33 @@ public class BookingService : IBookingService
         _roomTypeRepository = roomTypeRepository;
     }
 
-    public async Task<ApiResponse<List<BookingDTO>>> GetAllAsync()
+    public async Task<ApiResponse<PagedResult<BookingDTO>>> GetAllAsync(BookingsQueryDTO query)
     {
-        var bookings = await _bookingRepository.GetAllAsync();
-        var result = bookings.Select(b => new BookingDTO(
+        var paged = await _bookingRepository.SearchAsync(query);
+
+        var dto = paged.Items.Select(b => new BookingDTO(
             b.Id,
             b.RoomId,
+            b.Room.Number,
             b.UserId,
+            b.User.Login,
             b.CheckInDate,
             b.CheckOutDate,
             b.GuestsCount,
             b.TotalPrice,
-            b.Status.ToString()
+            b.Status.ToString(),
+            b.CreatedAt
         )).ToList();
 
-        return ApiResponse<List<BookingDTO>>.Ok(result, "Брони успешно получены");
+        return ApiResponse<PagedResult<BookingDTO>>.Ok(new PagedResult<BookingDTO>
+        {
+            Items = dto,
+            Total = paged.Total,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        }, "Брони успешно получены");
     }
+
 
     public async Task<ApiResponse<BookingDTO>> GetByIdAsync(Guid id)
     {
@@ -52,30 +63,45 @@ public class BookingService : IBookingService
         return ApiResponse<BookingDTO>.Ok(new BookingDTO(
             booking.Id,
             booking.RoomId,
+            booking.Room.Number,
             booking.UserId,
+            booking.User.Login,
             booking.CheckInDate,
             booking.CheckOutDate,
             booking.GuestsCount,
             booking.TotalPrice,
-            booking.Status.ToString()
+            booking.Status.ToString(),
+            booking.CreatedAt
         ), "Бронь успешно получена");
     }
 
-    public async Task<ApiResponse<List<BookingDTO>>> GetByUserIdAsync(Guid userId)
+    public async Task<ApiResponse<PagedResult<BookingDTO>>> GetByUserIdAsync(Guid userId, BookingsQueryDTO query)
     {
-        var bookings = await _bookingRepository.GetByUserIdAsync(userId);
-        var result = bookings.Select(b => new BookingDTO(
+        var q = query with { UserId = userId };
+
+        var paged = await _bookingRepository.SearchAsync(q);
+
+        var dto = paged.Items.Select(b => new BookingDTO(
             b.Id,
             b.RoomId,
+            b.Room.Number,
             b.UserId,
+            b.User.Login,
             b.CheckInDate,
             b.CheckOutDate,
             b.GuestsCount,
             b.TotalPrice,
-            b.Status.ToString()
+            b.Status.ToString(),
+            b.CreatedAt
         )).ToList();
 
-        return ApiResponse<List<BookingDTO>>.Ok(result, "Брони пользователя успешно получены");
+        return ApiResponse<PagedResult<BookingDTO>>.Ok(new PagedResult<BookingDTO>
+        {
+            Items = dto,
+            Total = paged.Total,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        }, "Брони пользователя успешно получены");
     }
 
     public async Task<ApiResponse<Guid>> CreateAsync(CreateBookingDTO dto)

@@ -28,12 +28,10 @@ public class RoomController : ControllerBase
     /// <remarks>Доступно только администратору</remarks>
     [Authorize(Roles = "Admin")]
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] RoomsQueryDTO query)
     {
-        var response = await _roomService.GetAllAsync();
-        return response.Success
-            ? Ok(response.Data)
-            : BadRequest(response.Message);
+        var response = await _roomService.GetAllAsync(query);
+        return response.Success ? Ok(response.Data) : BadRequest(response.Message);
     }
 
     /// <summary>

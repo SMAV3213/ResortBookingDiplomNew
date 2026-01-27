@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ResortBooking.Application.Interfaces.Repositories;
+using ResortBooking.Application.Responses;
 using ResortBooking.Domain.Entites;
 using ResortBooking.Domain.Enums;
 using ResortBooking.Infrastructure.Persistence;
@@ -17,6 +18,71 @@ public class RoomTypeRepository : IRoomTypeRepository
     public RoomTypeRepository(ApplicationDbContext context)
     {
         _context = context;
+    }
+
+    public async Task<PagedResult<RoomTypeWithoutRoomsDTO>> SearchAsync(RoomTypesQueryDTO q, CancellationToken ct = default)
+    {
+        var page = q.Page < 1 ? 1 : q.Page;
+        var pageSize = q.PageSize switch
+        {
+            < 1 => 20,
+            > 100 => 100,
+            _ => q.PageSize
+        };
+
+        var query = _context.RoomTypes
+            .AsNoTracking()
+            .Include(rt => rt.Images)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q.Search))
+        {
+            var s = q.Search.Trim();
+            query = query.Where(rt => rt.Name.Contains(s) || rt.Description.Contains(s));
+        }
+
+        if (q.MinCapacity.HasValue) query = query.Where(rt => rt.Capacity >= q.MinCapacity.Value);
+        if (q.MaxCapacity.HasValue) query = query.Where(rt => rt.Capacity <= q.MaxCapacity.Value);
+
+        if (q.MinPrice.HasValue) query = query.Where(rt => rt.PricePerNight >= q.MinPrice.Value);
+        if (q.MaxPrice.HasValue) query = query.Where(rt => rt.PricePerNight <= q.MaxPrice.Value);
+
+        var desc = string.Equals(q.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
+
+        query = (q.SortBy?.ToLowerInvariant(), desc) switch
+        {
+            ("price", true) => query.OrderByDescending(x => x.PricePerNight).ThenByDescending(x => x.Id),
+            ("price", false) => query.OrderBy(x => x.PricePerNight).ThenBy(x => x.Id),
+
+            ("capacity", true) => query.OrderByDescending(x => x.Capacity).ThenByDescending(x => x.Id),
+            ("capacity", false) => query.OrderBy(x => x.Capacity).ThenBy(x => x.Id),
+
+            ("name", true) => query.OrderByDescending(x => x.Name).ThenByDescending(x => x.Id),
+            _ => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
+        };
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(rt => new RoomTypeWithoutRoomsDTO(
+                rt.Id,
+                rt.Name,
+                rt.Description,
+                rt.Capacity,
+                rt.PricePerNight,
+                rt.Images.Select(i => i.FilePath).ToList()
+            ))
+            .ToListAsync(ct);
+
+        return new PagedResult<RoomTypeWithoutRoomsDTO>
+        {
+            Items = items,
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public Task<List<RoomType>> GetAllAsync()

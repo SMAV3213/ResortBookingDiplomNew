@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ResortBooking.Application.Interfaces.Services;
-using static ResortBooking.Application.DTOs.BookingsDTOs;
 using System.Security.Claims;
+using static ResortBooking.Application.DTOs.BookingsDTOs;
 
 namespace ResortBooking.API.Controllers;
 
@@ -28,12 +28,10 @@ public class BookingController : ControllerBase
     /// </summary>
     [Authorize(Roles = "Admin")]
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] BookingsQueryDTO query)
     {
-        var response = await _bookingService.GetAllAsync();
-        return response.Success
-            ? Ok(response.Data)
-            : BadRequest(response.Message);
+        var response = await _bookingService.GetAllAsync(query);
+        return response.Success ? Ok(response.Data) : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -56,15 +54,15 @@ public class BookingController : ControllerBase
     /// <summary>
     /// Получить брони текущего пользователя
     /// </summary>
+
     [Authorize]
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyBookings()
+    public async Task<IActionResult> GetMyBookings([FromQuery] BookingsQueryDTO query)
     {
         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var response = await _bookingService.GetByUserIdAsync(userId);
-        return response.Success
-            ? Ok(response.Data)
-            : BadRequest(response.Message);
+ 
+        var response = await _bookingService.GetByUserIdAsync(userId, query);
+        return response.Success ? Ok(response.Data) : BadRequest(response.Message);
     }
 
     /// <summary>

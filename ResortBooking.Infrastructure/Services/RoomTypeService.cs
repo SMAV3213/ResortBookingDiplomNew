@@ -20,6 +20,12 @@ public class RoomTypeService : IRoomTypeService
         _env = env;
     }
 
+    public async Task<ApiResponse<PagedResult<RoomTypeWithoutRoomsDTO>>> GetAllAsync(RoomTypesQueryDTO query)
+    {
+        var paged = await _repository.SearchAsync(query);
+        return ApiResponse<PagedResult<RoomTypeWithoutRoomsDTO>>.Ok(paged, "Типы комнат успешно получены");
+    }
+
     public async Task<ApiResponse<List<RoomTypeDTO>>> GetAllAsync()
     {
         var types = await _repository.GetAllAsync();

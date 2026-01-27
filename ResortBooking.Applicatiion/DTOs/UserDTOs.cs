@@ -26,4 +26,13 @@ public static class UserDTOs
     (
         UserRole Role
     );
+
+    public record UsersQueryDTO(
+    int Page = 1,
+    int PageSize = 20,
+    string? Search = null,     
+    string? Role = null,        
+    string SortBy = "login",
+    string SortDir = "asc" 
+);
 }

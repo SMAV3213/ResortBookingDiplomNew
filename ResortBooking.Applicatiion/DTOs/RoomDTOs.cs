@@ -31,4 +31,13 @@ public class RoomDTOs
         int Capacity,
         decimal PricePerNight
     );
+    public record RoomsQueryDTO(
+    int Page = 1,
+    int PageSize = 20,
+    string? Search = null,      // поиск по номеру комнаты
+    Guid? RoomTypeId = null,    // фильтр по типу
+    string? Status = null,      // Available/Occupied/Maintenance
+    string SortBy = "number",   // number/status/createdAt
+    string SortDir = "asc"      // asc/desc
+);
 }

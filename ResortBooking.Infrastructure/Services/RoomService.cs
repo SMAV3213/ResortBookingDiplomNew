@@ -20,11 +20,11 @@ public class RoomService : IRoomService
         _repository = repository;
     }
 
-    public async Task<ApiResponse<List<RoomDTO>>> GetAllAsync()
+    public async Task<ApiResponse<PagedResult<RoomDTO>>> GetAllAsync(RoomsQueryDTO query)
     {
-        var rooms = await _repository.GetAllAsync();
+        var paged = await _repository.SearchAsync(query);
 
-        var result = rooms.Select(x => new RoomDTO(
+        var items = paged.Items.Select(x => new RoomDTO(
             x.Id,
             x.Number,
             x.Status.ToString(),
@@ -37,9 +37,13 @@ public class RoomService : IRoomService
             )
         )).ToList();
 
-        return ApiResponse<List<RoomDTO>>.Ok(
-            result,
-            "Комнаты успешно получены");
+        return ApiResponse<PagedResult<RoomDTO>>.Ok(new PagedResult<RoomDTO>
+        {
+            Items = items,
+            Total = paged.Total,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        }, "Комнаты успешно получены");
     }
 
     public async Task<ApiResponse<RoomDTO>> GetByIdAsync(Guid id)

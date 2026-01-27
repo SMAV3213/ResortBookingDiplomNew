@@ -28,12 +28,10 @@ public class RoomTypesController : ControllerBase
     /// Получить список всех типов комнат
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] RoomTypesQueryDTO query)
     {
-        var response = await _service.GetAllAsync();
-        return response.Success
-            ? Ok(response.Data)
-            : BadRequest(response.Message);
+        var response = await _service.GetAllAsync(query);
+        return response.Success ? Ok(response.Data) : BadRequest(response.Message);
     }
 
     /// <summary>

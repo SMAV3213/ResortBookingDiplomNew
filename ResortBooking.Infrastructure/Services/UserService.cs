@@ -18,13 +18,19 @@ public class UserService : IUserService
         _repository = repository;
     }
 
-    public async Task<ApiResponse<List<UserDTO>>> GetAllAsync()
+    public async Task<ApiResponse<PagedResult<UserDTO>>> GetAllAsync(UsersQueryDTO query)
     {
-        var users = await _repository.GetAllAsync();
+        var paged = await _repository.SearchAsync(query);
 
-        var result = users.Select(Map).ToList();
+        var items = paged.Items.Select(Map).ToList();
 
-        return ApiResponse<List<UserDTO>>.Ok(result, "Пользователи получены");
+        return ApiResponse<PagedResult<UserDTO>>.Ok(new PagedResult<UserDTO>
+        {
+            Items = items,
+            Total = paged.Total,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        }, "Пользователи получены");
     }
 
     public async Task<ApiResponse<UserDTO>> GetByIdAsync(Guid id)

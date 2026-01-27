@@ -11,7 +11,7 @@ namespace ResortBooking.Application.Interfaces.Services;
 
 public interface IRoomService
 {
-    Task<ApiResponse<List<RoomDTO>>> GetAllAsync();
+    Task<ApiResponse<PagedResult<RoomDTO>>> GetAllAsync(RoomsQueryDTO query);
     Task<ApiResponse<RoomDTO>> GetByIdAsync(Guid id);
 
     Task<ApiResponse<Guid>> AddAsync(CreateRoomDTO dto);

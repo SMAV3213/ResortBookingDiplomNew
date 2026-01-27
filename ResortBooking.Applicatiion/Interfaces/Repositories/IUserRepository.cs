@@ -1,12 +1,15 @@
-﻿using ResortBooking.Domain.Entites;
+﻿using ResortBooking.Application.Responses;
+using ResortBooking.Domain.Entites;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static ResortBooking.Application.DTOs.UserDTOs;
 
 namespace ResortBooking.Application.Interfaces.Repositories;
 
 public interface IUserRepository
 {
+    Task<PagedResult<User>> SearchAsync(UsersQueryDTO query, CancellationToken ct = default);
     Task<User?> GetByLoginAsync(string login);
     Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByPhoneAsync(string phoneNumber);

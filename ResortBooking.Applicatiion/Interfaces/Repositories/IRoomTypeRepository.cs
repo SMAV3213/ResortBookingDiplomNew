@@ -1,4 +1,5 @@
-﻿using ResortBooking.Domain.Entites;
+﻿using ResortBooking.Application.Responses;
+using ResortBooking.Domain.Entites;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,6 +9,7 @@ namespace ResortBooking.Application.Interfaces.Repositories;
 
 public interface IRoomTypeRepository
 {
+    Task<PagedResult<RoomTypeWithoutRoomsDTO>> SearchAsync(RoomTypesQueryDTO query, CancellationToken ct = default);
     Task<List<RoomType>> GetAllAsync();
     Task<List<RoomTypeWithoutRoomsDTO>> GetAvailableRoomTypesAsync(int guests, DateTime checkIn, DateTime checkOut);
     Task<RoomType?> GetByIdAsync(Guid id);

@@ -47,4 +47,15 @@ public class RoomTypeDTOs
         string Number,
         string Status
     );
+    public record RoomTypesQueryDTO(
+    int Page = 1,
+    int PageSize = 20,
+    string? Search = null,       // name/description
+    int? MinCapacity = null,
+    int? MaxCapacity = null,
+    decimal? MinPrice = null,
+    decimal? MaxPrice = null,
+    string SortBy = "name",      // name/price/capacity
+    string SortDir = "asc"       // asc/desc
+);
 }
