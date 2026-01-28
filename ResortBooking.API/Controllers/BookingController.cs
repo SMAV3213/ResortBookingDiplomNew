@@ -89,10 +89,11 @@ public class BookingController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBookingDTO dto)
     {
-        var response = await _bookingService.UpdateAsync(id, dto);
-        return response.Success
-            ? Ok(response.Message)
-            : BadRequest(response.Message);
+        var actorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var isAdmin = User.IsInRole("Admin");
+
+        var response = await _bookingService.UpdateAsync(id, dto, actorId, isAdmin);
+        return response.Success ? Ok(response.Message) : BadRequest(response.Message);
     }
 
     /// <summary>
@@ -102,9 +103,11 @@ public class BookingController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Cancel(Guid id)
     {
-        var response = await _bookingService.CancelAsync(id);
-        return response.Success
-            ? Ok(response.Message)
-            : BadRequest(response.Message);
+        var actorId = Guid.Parse(User.FindFirst("sub")!.Value); // или NameIdentifier если у тебя реально работает
+        var isAdmin = User.IsInRole("Admin");
+
+        var response = await _bookingService.CancelAsync(id, actorId, isAdmin);
+        return response.Success ? Ok(response.Message) : BadRequest(response.Message);
     }
+
 }

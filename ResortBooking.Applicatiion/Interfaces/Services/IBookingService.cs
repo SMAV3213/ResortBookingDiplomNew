@@ -13,6 +13,6 @@ public interface IBookingService
 
     Task<ApiResponse<BookingDTO>> GetByIdAsync(Guid id);
     Task<ApiResponse<Guid>> CreateAsync(CreateBookingDTO dto);
-    Task<ApiResponse<bool>> UpdateAsync(Guid id, UpdateBookingDTO dto);
-    Task<ApiResponse<bool>> CancelAsync(Guid id);
+    Task<ApiResponse<bool>> UpdateAsync(Guid id, UpdateBookingDTO dto, Guid actorUserId, bool isAdmin);
+    Task<ApiResponse<bool>> CancelAsync(Guid id, Guid actorUserId, bool isAdmin);
 }

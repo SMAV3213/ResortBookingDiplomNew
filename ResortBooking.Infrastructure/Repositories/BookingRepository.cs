@@ -54,6 +54,18 @@ public class BookingRepository : IBookingRepository
         if (q.To.HasValue)
             query = query.Where(b => b.CheckOutDate <= q.To.Value);
 
+        if (q.CheckInFrom.HasValue)
+            query = query.Where(b => b.CheckInDate >= q.CheckInFrom.Value);
+
+        if (q.CheckInTo.HasValue)
+            query = query.Where(b => b.CheckInDate < q.CheckInTo.Value);
+
+        if (q.CheckOutFrom.HasValue)
+            query = query.Where(b => b.CheckOutDate >= q.CheckOutFrom.Value);
+
+        if (q.CheckOutTo.HasValue)
+            query = query.Where(b => b.CheckOutDate < q.CheckOutTo.Value);
+
         var desc = string.Equals(q.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
         query = (q.SortBy?.ToLower(), desc) switch
         {

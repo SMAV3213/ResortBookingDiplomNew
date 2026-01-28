@@ -153,16 +153,18 @@ public class BookingService : IBookingService
         return ApiResponse<Guid>.Ok(booking.Id, "Бронь успешно создана");
     }
 
-    public async Task<ApiResponse<bool>> UpdateAsync(Guid id, UpdateBookingDTO dto)
+    public async Task<ApiResponse<bool>> UpdateAsync(Guid id, UpdateBookingDTO dto, Guid actorUserId, bool isAdmin)
     {
         var booking = await _bookingRepository.GetByIdAsync(id);
         if (booking == null)
             return ApiResponse<bool>.Fail("Бронь не найдена");
 
+        if (!isAdmin && booking.UserId != actorUserId)
+            return ApiResponse<bool>.Fail("Нельзя редактировать чужую бронь");
+
         booking.CheckInDate = dto.CheckIn;
         booking.CheckOutDate = dto.CheckOut;
         booking.GuestsCount = dto.GuestsCount;
-
 
         _bookingRepository.Update(booking);
         await _bookingRepository.SaveChangesAsync();
@@ -170,19 +172,23 @@ public class BookingService : IBookingService
         return ApiResponse<bool>.Ok(true, "Бронь успешно обновлена");
     }
 
-    public async Task<ApiResponse<bool>> CancelAsync(Guid id)
+    public async Task<ApiResponse<bool>> CancelAsync(Guid id, Guid actorUserId, bool isAdmin)
     {
         var booking = await _bookingRepository.GetByIdAsync(id);
         if (booking == null)
             return ApiResponse<bool>.Fail("Бронь не найдена");
 
-        var timeUntilCheckIn = booking.CheckInDate.ToUniversalTime() - DateTime.UtcNow;
+        if (!isAdmin && booking.UserId != actorUserId)
+            return ApiResponse<bool>.Fail("Нельзя отменить чужую бронь");
 
-        if (timeUntilCheckIn.TotalDays < 3)
-            return ApiResponse<bool>.Fail("Нельзя отменить бронь, если до заезда осталось менее 3 дней");
+        if (!isAdmin)
+        {
+            var timeUntilCheckIn = booking.CheckInDate.ToUniversalTime() - DateTime.UtcNow;
+            if (timeUntilCheckIn.TotalDays < 3)
+                return ApiResponse<bool>.Fail("Нельзя отменить бронь, если до заезда осталось менее 3 дней. Обратитесь в поддержку.");
+        }
 
         booking.Status = BookingStatus.Cancelled;
-
         _bookingRepository.Update(booking);
         await _bookingRepository.SaveChangesAsync();
 

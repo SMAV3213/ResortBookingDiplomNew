@@ -42,7 +42,11 @@ public record BookingsQueryDTO(
     Guid? RoomId = null,
     Guid? RoomTypeId = null,
     DateTime? From = null,      
-    DateTime? To = null,        
+    DateTime? To = null,
+    DateTime? CheckInFrom = null,
+    DateTime? CheckInTo = null,
+    DateTime? CheckOutFrom = null,
+    DateTime? CheckOutTo = null,
     string SortBy = "checkIn",  
     string SortDir = "desc" 
 );
