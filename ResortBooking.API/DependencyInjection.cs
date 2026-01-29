@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder.Extensions;
@@ -11,6 +12,7 @@ using ResortBooking.API.Filters;
 using ResortBooking.Application.Data.Options;
 using ResortBooking.Application.Interfaces.Repositories;
 using ResortBooking.Application.Interfaces.Services;
+using ResortBooking.Application.Validators.UserValidators;
 using ResortBooking.Infrastructure.Persistence;
 using ResortBooking.Infrastructure.Repositories;
 using ResortBooking.Infrastructure.Services;
@@ -45,6 +47,8 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"));
         });
 
+        services.AddFluentValidationAutoValidation();
+        services.AddValidatorsFromAssembly(typeof(UpdateUserDTOValidator).Assembly);
 
         services.AddMemoryCache();
         services.AddApiAuthorization(configuration);

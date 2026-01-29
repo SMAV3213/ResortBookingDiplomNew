@@ -28,5 +28,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasOne(x => x.Room)
             .WithMany(x => x.Bookings)
             .HasForeignKey(x => x.RoomId);
+
+        
     }
 }

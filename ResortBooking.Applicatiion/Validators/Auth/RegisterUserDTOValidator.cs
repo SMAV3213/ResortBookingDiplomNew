@@ -19,7 +19,8 @@ public class RegisterUserDTOValidator : AbstractValidator<RegisterUserDTO>
             .EmailAddress().WithMessage("Некорректный формат почты");
 
         RuleFor(x => x.PhoneNumber)
-            .NotEmpty().WithMessage("Номер телефона обязателен");
+            .NotEmpty().WithMessage("Номер телефона не должен быть пустым")
+            .Matches(@"^\+?[0-9]{10,15}$").WithMessage("Некорректный формат номера телефона");
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Пароль обязателен")
