@@ -30,4 +30,8 @@
     <ProjectReference Include="..\ResortBooking.Infrastructure\ResortBooking.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\room-types\" />
+  </ItemGroup>
+
 </Project>

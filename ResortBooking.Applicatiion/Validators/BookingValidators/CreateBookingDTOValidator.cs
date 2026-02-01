@@ -17,14 +17,15 @@ public class CreateBookingDTOValidator : AbstractValidator<CreateBookingDTO>
             .NotEmpty().WithMessage("Тип комнаты обязателен");
 
         RuleFor(x => x.CheckIn)
-            .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
+            .Must(d => d.Date >= DateTime.UtcNow.Date)
             .WithMessage("Дата заезда должна быть не раньше сегодняшнего дня");
 
         RuleFor(x => x.CheckOut)
-            .GreaterThan(x => x.CheckIn)
+            .Must((dto, checkOut) => checkOut.Date > dto.CheckIn.Date)
             .WithMessage("Дата выезда должна быть позже даты заезда");
 
         RuleFor(x => x.GuestsCount)
-            .GreaterThan(0).WithMessage("Количество гостей должно быть больше 0");
+            .InclusiveBetween(1, 10)
+            .WithMessage("Количество гостей должно быть от 1 до 10");
     }
 }
