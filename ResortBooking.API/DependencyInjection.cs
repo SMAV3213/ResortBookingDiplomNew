@@ -24,29 +24,39 @@ using System.Text.Json.Serialization;
 namespace ResortBooking.API;
 
 /// <summary>
-/// Инъекция зависимостей (Dependency Injection)
+/// Инъекция зависимостей (Dependency Injection) - IoC контейнер приложения.
 /// 
-/// Здесь мы регистрируем все сервисы, репозитории и middleware
-/// в IoC контейнер приложения.
+/// Основная идея: вместо того, чтобы классы сами создавали свои зависимости,
+/// мы передаём им зависимости извне. Это называется "dependency inversion".
 /// 
-/// Это позволяет ASP.NET автоматически внедрять зависимости
-/// в конструкторы контроллеров, сервисов и т.д.
+/// Преимущества:
+/// - 🔄 Легко менять реализацию (например, БД)
+/// - ✅ Легче тестировать (можно внедрить mock объекты)
+/// - 🧹 Чище код, меньше боилерплейта
 /// 
-/// Жизненные циклы:
-/// - Transient: новый экземпляр каждый раз
-/// - Scoped: один экземпляр на HTTP request
-/// - Singleton: один на всё приложение
+/// Жизненные циклы регистрации:
+/// - Transient: каждый раз новый экземпляр (не кешируется)
+/// - Scoped: один экземпляр на один HTTP request (как сессия)
+/// - Singleton: один экземпляр на всё приложение (меняется редко)
+/// 
+/// Пример регистрации:
+///   services.AddScoped<IUserService, UserService>();
+///   // Когда контроллер просит IUserService, контейнер создаст UserService
 /// </summary>
 public static class DependencyInjection
 {
     /// <summary>
-    /// Регистрирует все API сервисы:
-    /// - Контроллеры и endpoints
-    /// - Entity Framework DbContext
-    /// - FluentValidation
-    /// - Репозитории (Database access)
-    /// - Business Logic сервисы
-    /// - Background Services (автоматические задачи)
+    /// Главный метод регистрации всех сервисов приложения.
+    /// Вызывается из Program.cs: builder.Services.AddApiServices();
+    /// 
+    /// Здесь мы регистрируем:
+    /// - DbContext (подключение к БД)
+    /// - Репозитории (доступ к данным)
+    /// - Бизнес-логика сервисы
+    /// - FluentValidation (проверка данных)
+    /// - Background services (автоматические задачи)
+    /// - Swagger (документация)
+    /// - JWT аутентификация
     /// </summary>
     public static IServiceCollection AddApiServices(
         this IServiceCollection services,
@@ -133,10 +143,27 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Настраивает JWT аутентификацию
+    /// Настраивает JWT аутентификацию. Это сердце безопасности приложения!
     /// 
-    /// JWT токен содержит информацию о пользователе и подписывается
-    /// секретным ключом. Сервер проверяет подпись и роль пользователя.
+    /// Как работает JWT (JSON Web Token):
+    /// 1. Пользователь логинится → сервер создает токен
+    /// 2. Токен содержит: ID пользователя, роль, время жизни
+    /// 3. Токен подписывается секретным ключом (в appsettings.json)
+    /// 4. Клиент отправляет токен в заголовке Authorization: Bearer {token}
+    /// 5. Сервер проверяет подпись и разрешает/запрещает доступ
+    /// 
+    /// Безопасность:
+    /// - Токен нельзя подделать без секретного ключа
+    /// - Токен имеет срок действия (15 минут по умолчанию)
+    /// - При истечении клиент должен обновить токен
+    /// 
+    /// appsettings.json должен содержать:
+    /// "Jwt": {
+    ///   "SecretKey": "very-long-secret-key-min-32-chars",
+    ///   "Issuer": "ResortBooking",
+    ///   "Audience": "ResortBookingClients",
+    ///   "ExpirationMinutes": 15
+    /// }
     /// </summary>
     public static IServiceCollection AddApiAuthorization(
     this IServiceCollection services, IConfiguration configuration
@@ -145,41 +172,56 @@ public static class DependencyInjection
         using var provider = services.BuildServiceProvider();
         var jwtSettings = configuration.GetSection("Jwt");
 
-        // Добавляем JWT Bearer аутентификацию
+        // Регистрируем JWT Bearer аутентификацию
         services.AddAuthentication(options =>
         {
-            // По умолчанию используем JWT Bearer
+            // Говорим приложению: используй JWT для аутентификации
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            // Если токен неверный, отправь 401 Unauthorized
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
-            // Настраиваем как проверять токен
+            // Параметры для проверки и валидации токена
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                // Проверяем все параметры
-                ValidateIssuer = true,               // Кто выдал?
-                ValidateAudience = true,             // Для кого?
-                ValidateLifetime = true,             // Не истёк ли?
-                ValidateIssuerSigningKey = true,     // Правильная подпись?
+                // Проверяем наличие и корректность всех параметров:
 
-                // Допустимые значения
+                // Кто выдал токен? (защита от токенов с других сервисов)
+                ValidateIssuer = true,
+
+                // Для кого этот токен? (дополнительная проверка назначения)
+                ValidateAudience = true,
+
+                // Не истёк ли срок действия? (токены "живут" ограниченное время)
+                ValidateLifetime = true,
+
+                // Правильная подпись? (никто не подделал токен)
+                ValidateIssuerSigningKey = true,
+
+                // Допустимые значения, которые мы проверяем выше
                 ValidIssuer = jwtSettings["Issuer"],
                 ValidAudience = jwtSettings["Audience"],
+
+                // Секретный ключ для проверки подписи
+                // ВАЖНО: должен совпадать с ключом, которым создавался токен!
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
             };
 
-            // Обработчик ошибок аутентификации
+            // Обработчик ошибок при неверной аутентификации
             options.Events = new JwtBearerEvents
             {
                 OnChallenge = async context =>
                 {
+                    // Обрабатываем challenge (401) событие самостоятельно
                     context.HandleResponse();
+
+                    // Возвращаем понятное сообщение об ошибке
                     var response = context.Response;
                     response.StatusCode = StatusCodes.Status401Unauthorized;
                     response.ContentType = "text/plain; charset=utf-8";
-                    var message = "Не авторизован";
+                    var message = "Не авторизован. Пожалуйста, передайте правильный JWT токен";
                     await response.WriteAsync(message);
                 }
             };
