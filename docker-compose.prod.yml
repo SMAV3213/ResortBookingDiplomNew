@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # SQL Server Database (Production)
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: resort-booking-db-prod
+    environment:
+      SA_PASSWORD: "${DB_PASSWORD}"
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+      MSSQL_PID: "Standard"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_prod_data:/var/opt/mssql/data
+      - sqlserver_prod_backups:/var/opt/mssql/backup
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "127.0.0.1", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - resort-network
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Resort Booking API (Production)
+  api:
+    image: resort-booking-api:latest
+    container_name: resort-booking-api-prod
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ResortBookingDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;"
+      JWT__SecretKey: "${JWT_SECRET_KEY}"
+      JWT__Issuer: "${JWT_ISSUER}"
+      JWT__Audience: "${JWT_AUDIENCE}"
+      JWT__ExpirationMinutes: "${JWT_EXPIRATION_MINUTES}"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - resort-network
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  sqlserver_prod_data:
+  sqlserver_prod_backups:
+
+networks:
+  resort-network:
+    driver: bridge

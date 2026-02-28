@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: resort-booking-db
+    environment:
+      SA_PASSWORD: "YourStrongPassword123!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    networks:
+      - resort-network
+    restart: unless-stopped
+
+  # Resort Booking API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resort-booking-api
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ResortBookingDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True;Connection Timeout=60;"
+      JWT__SecretKey: "your-secret-key-min-32-characters-long!"
+      JWT__Issuer: "ResortBookingApp"
+      JWT__Audience: "ResortBookingUsers"
+      JWT__ExpirationMinutes: "60"
+    depends_on:
+      - sqlserver
+    networks:
+      - resort-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+networks:
+  resort-network:
+    driver: bridge
