@@ -34,11 +34,13 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
         Console.WriteLine("✅ Миграции успешно применены.");
+        await DbInitializer.InitializeAsync(context);
+        Console.WriteLine("✅ База данных инициализирована.");
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ошибка при применении миграций базы данных.");
+        logger.LogError(ex, "Ошибка при инициализации базы данных.");
     }
 }
 
