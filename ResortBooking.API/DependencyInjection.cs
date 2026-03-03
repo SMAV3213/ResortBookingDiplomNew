@@ -289,7 +289,6 @@ public static class DependencyInjection
                 {
                     // Разрешаем запросы с указанных доменов
                     policy
-                        .WithOrigins([.. app.CorsOrigins])
                         .AllowAnyHeader()               // Разрешаем любые заголовки
                         .AllowAnyMethod()               // Разрешаем любые HTTP методы
                         .AllowCredentials()             // Разрешаем отправку credentials
