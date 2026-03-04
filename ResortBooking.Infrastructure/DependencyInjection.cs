@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,9 +10,6 @@ using ResortBooking.Application.Interfaces.Services;
 using ResortBooking.Infrastructure.Data.Options;
 using ResortBooking.Infrastructure.Persistence;
 using ResortBooking.Infrastructure.Services;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ResortBooking.Infrastructure;
 
@@ -18,8 +18,10 @@ public static class DependencyInjection
     /// <summary>
     /// Добавления Infrastructure сервисов.
     /// </summary>
-    public static IServiceCollection AddInfrastructureServices
-          (this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructureServices(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddScoped<IAuthService, AuthService>();
 
@@ -29,8 +31,11 @@ public static class DependencyInjection
     /// <summary>
     /// Добавления опций из конфигураций.
     /// </summary>
-    public static IServiceCollection AddOptions(this IServiceCollection services,
-        IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+    public static IServiceCollection AddOptions(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment webHostEnvironment
+    )
     {
         var appOptions = configuration.GetSection("App").Get<AppOptions>()!;
         //var jwtOptions = configuration.GetSection("JWT").Get<JwtOptions>()!;
@@ -39,5 +44,4 @@ public static class DependencyInjection
 
         return services;
     }
-
 }

@@ -60,7 +60,7 @@ public class BookingController : ControllerBase
     public async Task<IActionResult> GetMyBookings([FromQuery] BookingsQueryDTO query)
     {
         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
- 
+
         var response = await _bookingService.GetByUserIdAsync(userId, query);
         return response.Success ? Ok(response.Data) : BadRequest(response.Message);
     }

@@ -1,6 +1,6 @@
 ﻿/// <summary>
 /// Точка входа приложения Resort Booking
-/// 
+///
 /// Поток инициализации:
 /// 1. Создаём WebApplicationBuilder - конфигуратор приложения
 /// 2. Регистрируем сервисы в IoC контейнер (Dependency Injection)
@@ -8,7 +8,6 @@
 /// 4. Настраиваем middleware (как обрабатываются HTTP запросы)
 /// 5. Запускаем приложение на слушание портов
 /// </summary>
-
 using Microsoft.EntityFrameworkCore;
 using ResortBooking.API;
 using ResortBooking.Infrastructure;
@@ -17,12 +16,13 @@ using ResortBooking.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 // Регистрируем все сервисы приложения
-builder.Services
-    .AddApiServices(builder.Configuration)           // API сервисы (контроллеры, swagger и т.д.)
-    .AddOptions(builder.Configuration, builder.Environment)  // Конфигурация (опции для сервисов)
-    .AddApiCors()                                   // CORS политика (разрешение кроссдоменных запросов)
-    .AddInfrastructureServices(builder.Configuration);  // Infrastructure сервисы (БД, Repository, Services)
-    //.AddApplicationServices()
+builder
+    .Services.AddApiServices(builder.Configuration) // API сервисы (контроллеры, swagger и т.д.)
+    .AddOptions(builder.Configuration, builder.Environment) // Конфигурация (опции для сервисов)
+    .AddApiCors() // CORS политика (разрешение кроссдоменных запросов)
+    .AddInfrastructureServices(builder.Configuration); // Infrastructure сервисы (БД, Repository, Services)
+
+//.AddApplicationServices()
 
 var app = builder.Build();
 
@@ -53,7 +53,9 @@ app.UseStatusCodePages(async context =>
 
     if (response.StatusCode == StatusCodes.Status415UnsupportedMediaType)
     {
-        await response.WriteAsync("Неподдерживаемый тип содержимого. Ожидается 'application/json'.");
+        await response.WriteAsync(
+            "Неподдерживаемый тип содержимого. Ожидается 'application/json'."
+        );
     }
     else if (response.StatusCode == StatusCodes.Status401Unauthorized)
     {
