@@ -287,11 +287,11 @@ public static class DependencyInjection
                 "cors-policy",
                 policy =>
                 {
-                    // Разрешаем запросы с указанных доменов
+                    // Разрешаем запросы со всех источников
                     policy
+                        .AllowAnyOrigin()               // Разрешаем запросы с любых источников
                         .AllowAnyHeader()               // Разрешаем любые заголовки
                         .AllowAnyMethod()               // Разрешаем любые HTTP методы
-                        .AllowCredentials()             // Разрешаем отправку credentials
                         .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
                         .WithExposedHeaders("Content-Disposition");
                 }
