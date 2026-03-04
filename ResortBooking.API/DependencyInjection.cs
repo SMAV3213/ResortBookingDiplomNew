@@ -326,11 +326,11 @@ public static class DependencyInjection
         // Обработчик исключений
         app.UseExceptionHandler(options => { });
 
+        app.UseAuth();
         // Регистрируем маршруты контроллеров
         app.MapControllers();
 
         app.UseHttpsRedirection();
-        app.UseAuth();
         app.UseStaticFiles();
         app.UseApiSwagger(webHostEnvironment);
 
