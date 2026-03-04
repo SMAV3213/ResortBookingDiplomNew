@@ -287,13 +287,27 @@ public static class DependencyInjection
                 "cors-policy",
                 policy =>
                 {
-                    // Разрешаем запросы со всех источников
-                    policy
-                        .AllowAnyOrigin()               // Разрешаем запросы с любых источников
-                        .AllowAnyHeader()               // Разрешаем любые заголовки
-                        .AllowAnyMethod()               // Разрешаем любые HTTP методы
-                        .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
-                        .WithExposedHeaders("Content-Disposition");
+                    // Разрешаем запросы с указанных источников
+                    if (app.CorsOrigins.Any())
+                    {
+                        policy
+                            .WithOrigins(app.CorsOrigins.ToArray())  // Разрешаем запросы с конкретных доменов
+                            .AllowAnyHeader()               // Разрешаем любые заголовки
+                            .AllowAnyMethod()               // Разрешаем любые HTTP методы
+                            .AllowCredentials()             // Разрешаем отправку credentials (cookies, auth headers)
+                            .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
+                            .WithExposedHeaders("Content-Disposition");
+                    }
+                    else
+                    {
+                        // На случай если CorsOrigins пуста, разрешаем все без credentials
+                        policy
+                            .AllowAnyOrigin()               // Разрешаем запросы с любых источников
+                            .AllowAnyHeader()               // Разрешаем любые заголовки
+                            .AllowAnyMethod()               // Разрешаем любые HTTP методы
+                            .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
+                            .WithExposedHeaders("Content-Disposition");
+                    }
                 }
             );
         });
