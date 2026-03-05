@@ -23,158 +23,71 @@ using ResortBooking.Infrastructure.Services;
 
 namespace ResortBooking.API;
 
-/// <summary>
-/// Инъекция зависимостей (Dependency Injection) - IoC контейнер приложения.
-///
-/// Основная идея: вместо того, чтобы классы сами создавали свои зависимости,
-/// мы передаём им зависимости извне. Это называется "dependency inversion".
-///
-/// Преимущества:
-/// - 🔄 Легко менять реализацию (например, БД)
-/// - ✅ Легче тестировать (можно внедрить mock объекты)
-/// - 🧹 Чище код, меньше боилерплейта
-///
-/// Жизненные циклы регистрации:
-/// - Transient: каждый раз новый экземпляр (не кешируется)
-/// - Scoped: один экземпляр на один HTTP request (как сессия)
-/// - Singleton: один экземпляр на всё приложение (меняется редко)
-///
-/// Пример регистрации:
-///   services.AddScoped<IUserService, UserService>();
-///   // Когда контроллер просит IUserService, контейнер создаст UserService
-/// </summary>
 public static class DependencyInjection
 {
-    /// <summary>
-    /// Главный метод регистрации всех сервисов приложения.
-    /// Вызывается из Program.cs: builder.Services.AddApiServices();
-    ///
-    /// Здесь мы регистрируем:
-    /// - DbContext (подключение к БД)
-    /// - Репозитории (доступ к данным)
-    /// - Бизнес-логика сервисы
-    /// - FluentValidation (проверка данных)
-    /// - Background services (автоматические задачи)
-    /// - Swagger (документация)
-    /// - JWT аутентификация
-    /// </summary>
     public static IServiceCollection AddApiServices(
         this IServiceCollection services,
         IConfiguration configuration
     )
     {
-        // Добавляем документацию API (Swagger/OpenAPI)
         services
             .AddEndpointsApiExplorer()
-            // Добавляем контроллеры
             .AddControllers()
-            // Настраиваем JSON сериализацию - конвертируем enum в string
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
-        // Подключаем Entity Framework с SQL Server
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
         });
 
-        // Добавляем FluentValidation - автоматическая валидация DTOs
         services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssembly(typeof(UpdateUserDTOValidator).Assembly);
 
-        // Кешируем данные в памяти приложения
         services.AddMemoryCache();
 
-        // Настраиваем JWT аутентификацию
+        // ===== JWT =====
         services.AddApiAuthorization(configuration);
 
-        // Настраиваем Swagger документацию
+        // ===== CORS =====
+        services.AddApiCors(configuration);
+
+        // ===== Swagger =====
         services.AddApiSwagger();
 
-        // ==================== РЕГИСТРИРУЕМ РЕПОЗИТОРИИ ====================
-        // Scoped = новый экземпляр на каждый HTTP request
-        // Это обеспечивает безопасность данных между запросами
-
+        // ===== Repositories =====
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
 
-        // ==================== РЕГИСТРИРУЕМ БИЗНЕС-ЛОГИКУ ====================
-        // Сервисы выполняют бизнес-правила (проверки, расчёты и т.д.)
-
-        services.AddScoped<IAuthService, AuthService>(); // Аутентификация
-        services.AddScoped<IRoomTypeService, RoomTypeService>(); // Типы номеров
-        services.AddScoped<IRoomService, RoomService>(); // Номера
-        services.AddScoped<IBookingService, BookingService>(); // Бронирования
-        services.AddScoped<IUserService, UserService>(); // Пользователи
-
-        // ==================== СЕРВИСЫ ОБНОВЛЕНИЯ СТАТУСОВ ====================
-        // Эти сервисы содержат логику обновления статусов комнат и бронирований
+        // ===== Services =====
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IRoomTypeService, RoomTypeService>();
+        services.AddScoped<IRoomService, RoomService>();
+        services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IUserService, UserService>();
 
         services.AddScoped<IRoomStatusUpdateService, RoomStatusUpdateService>();
         services.AddScoped<IBookingStatusUpdateService, BookingStatusUpdateService>();
 
-        // ==================== BACKGROUND SERVICES ====================
-        // Запускаются автоматически при старте приложения
-        // Работают по расписанию (каждый день в 00:00 UTC)
-
-        // Обновляет статусы комнат на основе активных бронирований
+        // ===== Background Services =====
         services.AddHostedService<RoomStatusUpdateBackgroundService>();
-
-        // Отмечает завершённые бронирования
         services.AddHostedService<BookingStatusUpdateBackgroundService>();
-
-        // ==================== ВАЛИДАТОРЫ ====================
-        // FluentValidation будет автоматически использовать эти валидаторы
-        // при binding DTOs из HTTP запросов
 
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), ServiceLifetime.Scoped);
 
         return services;
     }
 
-    /// <summary>
-    /// Настраивает JWT аутентификацию. Это сердце безопасности приложения!
-    ///
-    /// Как работает JWT (JSON Web Token):
-    /// 1. Пользователь логинится → сервер создает токен
-    /// 2. Токен содержит: ID пользователя, роль, время жизни
-    /// 3. Токен подписывается секретным ключом (в appsettings.json)
-    /// 4. Клиент отправляет токен в заголовке Authorization: Bearer {token}
-    /// 5. Сервер проверяет подпись и разрешает/запрещает доступ
-    ///
-    /// Безопасность:
-    /// - Токен нельзя подделать без секретного ключа
-    /// - Токен имеет срок действия (15 минут по умолчанию)
-    /// - При истечении клиент должен обновить токен
-    ///
-    /// appsettings.json должен содержать:
-    /// "Jwt": {
-    ///   "SecretKey": "very-long-secret-key-min-32-chars",
-    ///   "Issuer": "ResortBooking",
-    ///   "Audience": "ResortBookingClients",
-    ///   "ExpirationMinutes": 15
-    /// }
-    /// </summary>
     public static IServiceCollection AddApiAuthorization(
         this IServiceCollection services,
         IConfiguration configuration
     )
     {
-        using var provider = services.BuildServiceProvider();
-        var jwtSettings = configuration.GetSection("Jwt");
-
-        // Регистрируем JWT Bearer аутентификацию
-    public static IServiceCollection AddApiAuthorization(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
-    {
-        // Берем данные напрямую из конфигурации, не создавая ServiceProvider
         var jwtSettings = configuration.GetSection("Jwt");
         var key = jwtSettings["Key"];
 
@@ -200,23 +113,20 @@ public static class DependencyInjection
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
-                    ClockSkew = TimeSpan.Zero // Убираем стандартную задержку в 5 минут
+                    ClockSkew = TimeSpan.Zero
                 };
 
-                // Обработчик ошибок при неверной аутентификации
                 options.Events = new JwtBearerEvents
                 {
                     OnChallenge = async context =>
                     {
-                        // Обрабатываем challenge (401) событие самостоятельно
                         context.HandleResponse();
-
-                        // Возвращаем понятное сообщение об ошибке
                         var response = context.Response;
                         response.StatusCode = StatusCodes.Status401Unauthorized;
                         response.ContentType = "text/plain; charset=utf-8";
-                        var message = "Не авторизован. Пожалуйста, передайте правильный JWT токен";
-                        await response.WriteAsync(message);
+                        await response.WriteAsync(
+                            "Не авторизован. Пожалуйста, передайте правильный JWT токен"
+                        );
                     },
                 };
             });
@@ -224,17 +134,44 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>
-    /// Настраивает Swagger (API документация)
-    ///
-    /// Swagger автоматически генерирует документацию из XML комментариев
-    /// и позволяет тестировать API прямо из браузера
-    /// </summary>
+    public static IServiceCollection AddApiCors(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        // Берём разрешённые origins из appsettings.json
+        var allowedOrigins = configuration
+            .GetSection("App:CorsOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy("cors-policy", policy =>
+            {
+                if (allowedOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedOrigins);
+                }
+                else
+                {
+                    policy.SetIsOriginAllowed(_ => true);
+                }
+
+                policy
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()
+                    .WithExposedHeaders("Content-Disposition");
+            });
+        });
+
+        return services;
+    }
+
     private static IServiceCollection AddApiSwagger(this IServiceCollection services)
     {
         services.AddSwaggerGen(options =>
         {
-            // Загружаем XML документацию из сборок
             var currentAssembly = Assembly.GetExecutingAssembly();
 
             var xmlDocs = currentAssembly
@@ -246,79 +183,45 @@ public static class DependencyInjection
 
             xmlDocs.ForEach(xmlDoc => options.IncludeXmlComments(xmlDoc));
 
-            // Добавляем возможность передачи JWT токена
             options.AddSecurityDefinition(
                 JwtBearerDefaults.AuthenticationScheme,
-                new OpenApiSecurityScheme
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
                     Description = "Введите JWT токен авторизации.",
                     Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
                     BearerFormat = "JWT",
                     Scheme = JwtBearerDefaults.AuthenticationScheme,
                 }
             );
 
-            // Добавляем фильтр для авторизации в Swagger
             options.OperationFilter<JwtAuthorizeFilter>();
         });
 
         return services;
     }
 
-    /// <summary>
-    /// Добавляет CORS политику (разрешение запросов с других доменов)
-    ///
-    /// Без CORS браузер не позволит JS коду с одного домена
-    /// делать запросы на другой домен
-    /// </summary>
-    public static IServiceCollection AddApiCors(this IServiceCollection services)
-    {
-        services.AddCors(options =>
-        {
-            options.AddPolicy("cors-policy", policy =>
-            {
-                policy.SetIsOriginAllowed(origin => true) // Разрешает любой Origin динамически
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials() // Обязательно для Axios { withCredentials: true }
-                    .WithExposedHeaders("Content-Disposition");
-            });
-        });
-
-        return services;
-    }
-
-    /// <summary>
-    /// Применяет middleware (обработчики HTTP запросов)
-    ///
-    /// Middleware выполняется в порядке регистрации
-    /// </summary>
     public static WebApplication UseApiServices(
         this WebApplication app,
         IWebHostEnvironment webHostEnvironment
     )
     {
-        // Обработчик исключений
         app.UseExceptionHandler(options => { });
 
-        app.UseAuth();
-        // Регистрируем маршруты контроллеров
-        app.MapControllers();
-
         app.UseHttpsRedirection();
+
         app.UseStaticFiles();
+
+        app.UseCors("cors-policy");
+
+        app.UseAuthentication();
+
+        app.UseAuthorization();
+
         app.UseApiSwagger(webHostEnvironment);
 
-        return app;
-    }
-
-    private static WebApplication UseAuth(this WebApplication app)
-    {
-        app.UseCors("cors-policy");
-        app.UseAuthentication();
-        app.UseAuthorization();
+        app.MapControllers();
 
         return app;
     }
