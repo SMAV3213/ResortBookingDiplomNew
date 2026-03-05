@@ -289,10 +289,9 @@ public static class DependencyInjection
                 policy =>
                 {
                     policy
-                        .WithOrigins(app.CorsOrigins.ToArray()) // Разрешаем запросы с конкретных доменов
+                        .AllowAnyOrigin()
                         .AllowAnyHeader() // Разрешаем любые заголовки
                         .AllowAnyMethod() // Разрешаем любые HTTP методы
-                        .AllowCredentials() // Разрешаем отправку credentials (cookies, auth headers)
                         .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
                         .WithExposedHeaders("Content-Disposition");
                 }
