@@ -19,7 +19,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder
     .Services.AddApiServices(builder.Configuration) // API сервисы (контроллеры, swagger и т.д.)
     .AddOptions(builder.Configuration, builder.Environment) // Конфигурация (опции для сервисов)
-    .AddApiCors() // CORS политика (разрешение кроссдоменных запросов)
     .AddInfrastructureServices(builder.Configuration); // Infrastructure сервисы (БД, Repository, Services)
 
 //.AddApplicationServices()

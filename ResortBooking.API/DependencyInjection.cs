@@ -42,7 +42,6 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddApiAuthorization(configuration);
-        services.AddApiCors(configuration);
         services.AddApiSwagger();
 
         // Repositories
@@ -122,30 +121,7 @@ public static class DependencyInjection
     // ============================================================
     //  CORS — максимально открытый для отладки
     // ============================================================
-    public static IServiceCollection AddApiCors(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
-    {
-        services.AddCors(options =>
-        {
-            options.AddPolicy("cors-policy", policy =>
-            {
-                // Разрешаем ВСЕ origins динамически
-                // SetIsOriginAllowed нужен когда используется AllowCredentials
-                // потому что AllowAnyOrigin() + AllowCredentials() запрещено
-                policy
-                    .SetIsOriginAllowed(_ => true)   // <-- ЛЮБОЙ origin
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials()
-                    .WithExposedHeaders("Content-Disposition");
-            });
-        });
-
-        return services;
-    }
-
+    
     private static IServiceCollection AddApiSwagger(this IServiceCollection services)
     {
         services.AddSwaggerGen(options =>
@@ -199,9 +175,6 @@ public static class DependencyInjection
 
         // 3. Роутинг (неявно включается, но лучше явно)
         app.UseRouting();
-
-        // 4. CORS — СТРОГО после UseRouting, СТРОГО до UseAuthentication
-        app.UseCors("cors-policy");
 
         // 5. Аутентификация
         app.UseAuthentication();
