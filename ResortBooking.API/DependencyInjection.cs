@@ -169,42 +169,38 @@ public static class DependencyInjection
         var jwtSettings = configuration.GetSection("Jwt");
 
         // Регистрируем JWT Bearer аутентификацию
+    public static IServiceCollection AddApiAuthorization(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        // Берем данные напрямую из конфигурации, не создавая ServiceProvider
+        var jwtSettings = configuration.GetSection("Jwt");
+        var key = jwtSettings["Key"];
+
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new Exception("JWT Key is missing in appsettings.json");
+        }
+
         services
             .AddAuthentication(options =>
             {
-                // Говорим приложению: используй JWT для аутентификации
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                // Если токен неверный, отправь 401 Unauthorized
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
             .AddJwtBearer(options =>
             {
-                // Параметры для проверки и валидации токена
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    // Проверяем наличие и корректность всех параметров:
-
-                    // Кто выдал токен? (защита от токенов с других сервисов)
                     ValidateIssuer = true,
-
-                    // Для кого этот токен? (дополнительная проверка назначения)
                     ValidateAudience = true,
-
-                    // Не истёк ли срок действия? (токены "живут" ограниченное время)
                     ValidateLifetime = true,
-
-                    // Правильная подпись? (никто не подделал токен)
                     ValidateIssuerSigningKey = true,
-
-                    // Допустимые значения, которые мы проверяем выше
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
-
-                    // Секретный ключ для проверки подписи
-                    // ВАЖНО: должен совпадать с ключом, которым создавался токен!
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings["Key"]!)
-                    ),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+                    ClockSkew = TimeSpan.Zero // Убираем стандартную задержку в 5 минут
                 };
 
                 // Обработчик ошибок при неверной аутентификации
@@ -279,24 +275,16 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddApiCors(this IServiceCollection services)
     {
-        using var provider = services.BuildServiceProvider();
-        var app = provider.GetRequiredService<IAppOptions>();
-
         services.AddCors(options =>
         {
-            options.AddPolicy(
-                "cors-policy",
-                policy =>
-                {
-                    policy
-                        .WithOrigins(app.CorsOrigins.ToArray()) // Разрешаем запросы с конкретных доменов
-                        .AllowAnyHeader() // Разрешаем любые заголовки
-                        .AllowAnyMethod() // Разрешаем любые HTTP методы
-                        .AllowCredentials() // Разрешаем отправку credentials (cookies, auth headers)
-                        .SetPreflightMaxAge(TimeSpan.FromSeconds(3600))
-                        .WithExposedHeaders("Content-Disposition");
-                }
-            );
+            options.AddPolicy("cors-policy", policy =>
+            {
+                policy.SetIsOriginAllowed(origin => true) // Разрешает любой Origin динамически
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials() // Обязательно для Axios { withCredentials: true }
+                    .WithExposedHeaders("Content-Disposition");
+            });
         });
 
         return services;
