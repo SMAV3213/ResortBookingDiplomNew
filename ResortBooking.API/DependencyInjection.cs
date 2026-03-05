@@ -24,6 +24,24 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
+        services.AddCors(options =>
+    {
+        options.AddPolicy("cors-policy", policy =>
+        {
+            policy
+                .WithOrigins(
+                    "http://localhost:5173",        // dev Vite
+                    "http://localhost",             // production через nginx:80
+                    "http://147.45.44.61",          // production по IP (порт 80)
+                    "http://147.45.44.61:80",       // явно с портом
+                    "http://147.45.44.61:8080"      // если кто-то обращается напрямую к API
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();               // нужно для withCredentials: true
+        });
+    });
+
         services
             .AddEndpointsApiExplorer()
             .AddControllers()
@@ -165,30 +183,30 @@ public static class DependencyInjection
     )
     {
         // 1. Глобальный обработчик ошибок
-        app.UseExceptionHandler(options => { });
+    app.UseExceptionHandler(options => { });
 
-        // ⚠️ НЕ используем UseHttpsRedirection — мы работаем по HTTP!
-        // app.UseHttpsRedirection();  // УБРАНО — это ломало CORS preflight
+    // 2. Статические файлы
+    app.UseStaticFiles();
 
-        // 2. Статические файлы (если есть)
-        app.UseStaticFiles();
+    // 3. Роутинг
+    app.UseRouting();
 
-        // 3. Роутинг (неявно включается, но лучше явно)
-        app.UseRouting();
+    // ✅ 4. CORS — ОБЯЗАТЕЛЬНО между UseRouting и UseAuthentication
+    app.UseCors("cors-policy");
 
-        // 5. Аутентификация
-        app.UseAuthentication();
+    // 5. Аутентификация
+    app.UseAuthentication();
 
-        // 6. Авторизация
-        app.UseAuthorization();
+    // 6. Авторизация
+    app.UseAuthorization();
 
-        // 7. Swagger
-        app.UseApiSwagger(webHostEnvironment);
+    // 7. Swagger
+    app.UseApiSwagger(webHostEnvironment);
 
-        // 8. Маппинг контроллеров с явным указанием CORS policy
-        app.MapControllers().RequireCors("cors-policy");
+    // 8. Маппинг контроллеров
+    app.MapControllers().RequireCors("cors-policy");
 
-        return app;
+    return app;
     }
 
     private static WebApplication UseApiSwagger(
