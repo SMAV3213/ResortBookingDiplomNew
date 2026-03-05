@@ -24,23 +24,29 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
+         var corsOrigins = configuration
+        .GetSection("App:CorsOrigins")
+        .Get<string[]>()
+        ?? new[]
+        {
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost",
+            "http://147.45.44.61"
+        };
+
         services.AddCors(options =>
     {
         options.AddPolicy("cors-policy", policy =>
         {
             policy
-                .WithOrigins(
-                    "http://localhost:5173",        // dev Vite
-                    "http://localhost",             // production через nginx:80
-                    "http://147.45.44.61",          // production по IP (порт 80)
-                    "http://147.45.44.61:80",       // явно с портом
-                    "http://147.45.44.61:8080"      // если кто-то обращается напрямую к API
-                )
+                .WithOrigins(corsOrigins)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowCredentials();               // нужно для withCredentials: true
+                .AllowCredentials();
         });
     });
+
 
         services
             .AddEndpointsApiExplorer()
@@ -157,13 +163,23 @@ public static class DependencyInjection
 
             options.AddSecurityDefinition(
                 JwtBearerDefaults.AuthenticationScheme,
-                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                new OpenApiSecurityScheme
                 {
                     Description = "Введите JWT токен авторизации.",
+
+
                     Name = "Authorization",
-                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+
+
+                    In = ParameterLocation.Header,
+
+
+                    Type = SecuritySchemeType.Http,
+
+
                     BearerFormat = "JWT",
+
+
                     Scheme = JwtBearerDefaults.AuthenticationScheme,
                 }
             );
