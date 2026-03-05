@@ -18,7 +18,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Регистрируем все сервисы приложения
 builder
     .Services.AddApiServices(builder.Configuration) // API сервисы (контроллеры, swagger и т.д.)
-    .AddOptions(builder.Configuration, builder.Environment) // Конфигурация (опции для сервисов)
     .AddInfrastructureServices(builder.Configuration); // Infrastructure сервисы (БД, Repository, Services)
 
 //.AddApplicationServices()

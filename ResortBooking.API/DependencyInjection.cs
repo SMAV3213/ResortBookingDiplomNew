@@ -14,6 +14,7 @@ using ResortBooking.Infrastructure.BackgroundServices;
 using ResortBooking.Infrastructure.Persistence;
 using ResortBooking.Infrastructure.Repositories;
 using ResortBooking.Infrastructure.Services;
+using Microsoft.OpenApi.Models;  
 
 namespace ResortBooking.API;
 
