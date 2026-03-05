@@ -3,16 +3,10 @@ using System.Text;
 using System.Text.Json.Serialization;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder.Extensions;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using ResortBooking.API.Filters;
-using ResortBooking.Application.Data.Options;
 using ResortBooking.Application.Interfaces.Repositories;
 using ResortBooking.Application.Interfaces.Services;
 using ResortBooking.Application.Validators.UserValidators;
@@ -47,34 +41,27 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(typeof(UpdateUserDTOValidator).Assembly);
 
         services.AddMemoryCache();
-
-        // ===== JWT =====
         services.AddApiAuthorization(configuration);
-
-        // ===== CORS =====
         services.AddApiCors(configuration);
-
-        // ===== Swagger =====
         services.AddApiSwagger();
 
-        // ===== Repositories =====
+        // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
 
-        // ===== Services =====
+        // Services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRoomTypeService, RoomTypeService>();
         services.AddScoped<IRoomService, RoomService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IUserService, UserService>();
-
         services.AddScoped<IRoomStatusUpdateService, RoomStatusUpdateService>();
         services.AddScoped<IBookingStatusUpdateService, BookingStatusUpdateService>();
 
-        // ===== Background Services =====
+        // Background
         services.AddHostedService<RoomStatusUpdateBackgroundService>();
         services.AddHostedService<BookingStatusUpdateBackgroundService>();
 
@@ -92,9 +79,7 @@ public static class DependencyInjection
         var key = jwtSettings["Key"];
 
         if (string.IsNullOrEmpty(key))
-        {
             throw new Exception("JWT Key is missing in appsettings.json");
-        }
 
         services
             .AddAuthentication(options =>
@@ -134,30 +119,23 @@ public static class DependencyInjection
         return services;
     }
 
+    // ============================================================
+    //  CORS — максимально открытый для отладки
+    // ============================================================
     public static IServiceCollection AddApiCors(
         this IServiceCollection services,
         IConfiguration configuration
     )
     {
-        // Берём разрешённые origins из appsettings.json
-        var allowedOrigins = configuration
-            .GetSection("App:CorsOrigins")
-            .Get<string[]>() ?? Array.Empty<string>();
-
         services.AddCors(options =>
         {
             options.AddPolicy("cors-policy", policy =>
             {
-                if (allowedOrigins.Length > 0)
-                {
-                    policy.WithOrigins(allowedOrigins);
-                }
-                else
-                {
-                    policy.SetIsOriginAllowed(_ => true);
-                }
-
+                // Разрешаем ВСЕ origins динамически
+                // SetIsOriginAllowed нужен когда используется AllowCredentials
+                // потому что AllowAnyOrigin() + AllowCredentials() запрещено
                 policy
+                    .SetIsOriginAllowed(_ => true)   // <-- ЛЮБОЙ origin
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()
@@ -202,26 +180,40 @@ public static class DependencyInjection
         return services;
     }
 
+    // ============================================================
+    //  PIPELINE — ПРАВИЛЬНЫЙ ПОРЯДОК
+    // ============================================================
     public static WebApplication UseApiServices(
         this WebApplication app,
         IWebHostEnvironment webHostEnvironment
     )
     {
+        // 1. Глобальный обработчик ошибок
         app.UseExceptionHandler(options => { });
 
-        app.UseHttpsRedirection();
+        // ⚠️ НЕ используем UseHttpsRedirection — мы работаем по HTTP!
+        // app.UseHttpsRedirection();  // УБРАНО — это ломало CORS preflight
 
+        // 2. Статические файлы (если есть)
         app.UseStaticFiles();
 
+        // 3. Роутинг (неявно включается, но лучше явно)
+        app.UseRouting();
+
+        // 4. CORS — СТРОГО после UseRouting, СТРОГО до UseAuthentication
         app.UseCors("cors-policy");
 
+        // 5. Аутентификация
         app.UseAuthentication();
 
+        // 6. Авторизация
         app.UseAuthorization();
 
+        // 7. Swagger
         app.UseApiSwagger(webHostEnvironment);
 
-        app.MapControllers();
+        // 8. Маппинг контроллеров с явным указанием CORS policy
+        app.MapControllers().RequireCors("cors-policy");
 
         return app;
     }
